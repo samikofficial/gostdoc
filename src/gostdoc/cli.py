@@ -43,6 +43,44 @@ def _setup_console() -> None:
             pass
 
 
+def _launched_by_doubleclick() -> bool:
+    """Похоже ли, что .exe запущен двойным кликом/перетаскиванием (своя новая консоль).
+
+    GetConsoleProcessList возвращает число процессов в консоли: 1 — консоль создана
+    под нас (проводник), >1 — запущено из уже открытого cmd/PowerShell. В терминале и
+    при пайпах (CI/тесты) вернёт False, поэтому паузы там не будет.
+    """
+    if sys.platform != "win32":
+        return False
+    if not (sys.stdin and sys.stdin.isatty()):
+        return False
+    try:
+        import ctypes
+
+        arr = (ctypes.c_uint * 2)()
+        count = ctypes.windll.kernel32.GetConsoleProcessList(arr, 2)
+        return count <= 1
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _pause() -> None:
+    try:
+        input("\nНажмите Enter для выхода…")
+    except Exception:  # noqa: BLE001
+        pass
+
+
+_USAGE_HINT = (
+    "gostdoc — приведение оформления .docx к ГОСТ 7.32-2017.\n\n"
+    "Как пользоваться:\n"
+    "  • перетащите файл .docx на gostdoc.exe, или\n"
+    "  • запустите в консоли:  gostdoc ДИПЛОМ.docx\n\n"
+    "Результат сохраняется рядом: ДИПЛОМ.gost.docx (исходник не меняется).\n"
+    "Параметры: --check, --no-detect-structure, --margins, --page-number — см. --help."
+)
+
+
 def _default_output(input_path: str) -> str:
     """INPUT.docx → INPUT.gost.docx (исходник не перезаписываем)."""
     p = Path(input_path)
@@ -93,8 +131,24 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _no_arguments(argv: list[str] | None) -> bool:
+    return (argv is None and len(sys.argv) <= 1) or argv == []
+
+
 def main(argv: list[str] | None = None) -> int:
     _setup_console()
+    interactive = _launched_by_doubleclick()
+    try:
+        if interactive and _no_arguments(argv):
+            print(_USAGE_HINT)
+            return EXIT_ERROR
+        return _run(argv)
+    finally:
+        if interactive:
+            _pause()
+
+
+def _run(argv: list[str] | None) -> int:
     args = _build_parser().parse_args(argv)
     try:
         profile = build_profile(
