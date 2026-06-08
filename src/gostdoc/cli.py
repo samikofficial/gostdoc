@@ -54,8 +54,10 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_OK
 
         output = args.output or _default_output(args.input)
-        format_document(args.input, output)
+        warnings = format_document(args.input, output)
         print(f"Готово: {output}")
+        for warning in warnings:
+            print(f"Предупреждение: {warning}")
         return EXIT_OK
     except GostDocError as exc:
         print(f"Ошибка: {exc}", file=sys.stderr)

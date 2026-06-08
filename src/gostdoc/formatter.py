@@ -16,6 +16,7 @@ from pathlib import Path
 
 from docx import Document
 from docx.document import Document as _Document
+from docx.oxml.ns import qn
 from docx.table import Table
 
 from . import classify, constants as c, paragraphs, runs, sections, styles
@@ -23,6 +24,9 @@ from .xml_utils import lengths_equal, paragraph_has_page_field
 
 _OLE2_MAGIC = b"\xd0\xcf\x11\xe0"
 _ZIP_MAGIC = b"PK"
+
+# Теги исправлений (режим рецензирования) — их не принимаем/не отклоняем, но предупреждаем.
+_REVISION_TAGS = ("w:ins", "w:del", "w:moveFrom", "w:moveTo")
 
 
 class GostDocError(Exception):
@@ -59,7 +63,11 @@ def _validate_and_open(input_path: str) -> _Document:
 
 def _normalize_runs_in_paragraph(paragraph, category: str) -> None:
     is_heading = category == classify.CATEGORY_HEADING
-    for run in paragraph.runs:
+    # Включаем run'ы внутри гиперссылок (подв. камень №17): иначе они остаются Calibri.
+    run_list = list(paragraph.runs)
+    for hyperlink in paragraph.hyperlinks:
+        run_list.extend(hyperlink.runs)
+    for run in run_list:
         if is_heading:
             runs.normalize_heading_run(run)
         else:
@@ -124,16 +132,34 @@ def extract_body_text(document: _Document) -> str:
     return "\n".join(parts)
 
 
-def format_document(input_path: str, output_path: str) -> str:
-    """Привести оформление input_path к ГОСТ 7.32-2017 и сохранить в output_path."""
+def detect_warnings(document: _Document) -> list[str]:
+    """Неблокирующие предупреждения: исправления и комментарии (подв. камень №19)."""
+    warnings: list[str] = []
+    root = document.element
+    if any(root.findall(".//" + qn(tag)) for tag in _REVISION_TAGS):
+        warnings.append(
+            "В документе есть исправления (режим рецензирования). Оформление приведено "
+            "к ГОСТ, но итог может выглядеть иначе после принятия/отклонения правок."
+        )
+    if root.findall(".//" + qn("w:commentReference")):
+        warnings.append("В документе есть комментарии — они сохранены без изменений.")
+    return warnings
+
+
+def format_document(input_path: str, output_path: str) -> list[str]:
+    """Привести оформление input_path к ГОСТ 7.32-2017 и сохранить в output_path.
+
+    Возвращает список неблокирующих предупреждений (исправления/комментарии).
+    """
     document = _validate_and_open(input_path)
+    warnings = detect_warnings(document)
     styles.normalize_styles(document)
     sections.normalize_margins(document)
     sections.setup_page_numbering(document)
     _normalize_body(document)
     _normalize_header_footer_fonts(document)
     document.save(output_path)
-    return output_path
+    return warnings
 
 
 def check_compliance(document: _Document) -> list[str]:

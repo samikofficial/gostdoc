@@ -20,6 +20,8 @@ from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -231,6 +233,63 @@ def already_gost(path: Path) -> bool:
     return True
 
 
+def with_hyperlink(path: Path) -> None:
+    """Гиперссылка с прямым форматированием Calibri внутри (подв. камень №17)."""
+    doc = Document()
+    p = doc.add_paragraph()
+    _set_run(p.add_run("См. ресурс: "), "Calibri", 11)
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("w:anchor"), "ref1")
+    r = OxmlElement("w:r")
+    rpr = OxmlElement("w:rPr")
+    rfonts = OxmlElement("w:rFonts")
+    rfonts.set(qn("w:ascii"), "Calibri")
+    rfonts.set(qn("w:hAnsi"), "Calibri")
+    sz = OxmlElement("w:sz")
+    sz.set(qn("w:val"), "22")  # 11 пт
+    rpr.append(rfonts)
+    rpr.append(sz)
+    t = OxmlElement("w:t")
+    t.text = "перейти по ссылке"
+    r.append(rpr)
+    r.append(t)
+    hyperlink.append(r)
+    p._p.append(hyperlink)
+    _set_run(p.add_run(" — конец абзаца."), "Calibri", 11)
+    doc.save(str(path))
+
+
+def with_revisions(path: Path) -> None:
+    """Документ с исправлениями (tracked changes) — для предупреждения (подв. камень №19)."""
+    doc = Document()
+    p = doc.add_paragraph()
+    _set_run(p.add_run("Текст с правкой рецензента. "), "Calibri", 11)
+    ins = OxmlElement("w:ins")
+    ins.set(qn("w:id"), "1")
+    ins.set(qn("w:author"), "Рецензент")
+    ins.set(qn("w:date"), "2026-01-01T00:00:00Z")
+    r = OxmlElement("w:r")
+    t = OxmlElement("w:t")
+    t.text = "вставленный фрагмент"
+    r.append(t)
+    ins.append(r)
+    p._p.append(ins)
+    doc.save(str(path))
+
+
+def mirror_margins(path: Path) -> None:
+    """Зеркальные поля + нестандартные поля (подв. камень №18)."""
+    doc = Document()
+    s = doc.sections[0]
+    s.left_margin = Mm(10)
+    s.right_margin = Mm(10)
+    s.top_margin = Mm(10)
+    s.bottom_margin = Mm(10)
+    doc.settings.element.append(OxmlElement("w:mirrorMargins"))
+    doc.add_paragraph("Документ с зеркальными полями и переплётом.")
+    doc.save(str(path))
+
+
 def legacy_doc(path: Path) -> None:
     """Псевдо-.doc со старой OLE2-сигнатурой (для проверки ошибки формата)."""
     ole2_magic = bytes([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1])
@@ -253,6 +312,9 @@ BUILDERS = {
     "with_list.docx": with_list,
     "localized_styles.docx": localized_styles,
     "title_and_body.docx": title_and_body,
+    "with_hyperlink.docx": with_hyperlink,
+    "with_revisions.docx": with_revisions,
+    "mirror_margins.docx": mirror_margins,
 }
 
 

@@ -5,7 +5,10 @@ from __future__ import annotations
 from docx.oxml.ns import qn
 from docx.shared import Pt
 
+from docx import Document
+
 from gostdoc import constants as c
+from gostdoc.formatter import format_document
 from gostdoc.runs import normalize_run
 
 
@@ -69,3 +72,12 @@ def test_normalize_does_not_recreate_run_keeps_drawing(load_fixture):
         normalize_run(run)
     drawings_after = len(p._p.findall(".//" + qn("w:drawing")))
     assert drawings_before == drawings_after == 1
+
+
+def test_hyperlink_run_font_normalized(fixtures_dir, tmp_path):
+    out = tmp_path / "hl.docx"
+    format_document(str(fixtures_dir / "with_hyperlink.docx"), str(out))
+    p = Document(str(out)).paragraphs[0]
+    fonts = [r.font.name for hl in p.hyperlinks for r in hl.runs]
+    assert fonts, "в фикстуре нет run'ов внутри гиперссылки"
+    assert all(name == c.FONT_NAME for name in fonts)

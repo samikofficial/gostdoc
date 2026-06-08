@@ -18,6 +18,8 @@ VALID_FIXTURES = [
     "with_list.docx",
     "localized_styles.docx",
     "title_and_body.docx",
+    "with_hyperlink.docx",
+    "mirror_margins.docx",
 ]
 
 
