@@ -59,7 +59,7 @@ def _normalize_normal(document: _Document) -> None:
 
 
 def _is_heading_name(name: str | None) -> bool:
-    return bool(name) and any(name.startswith(p) for p in c.STYLE_PREFIXES_HEADING)
+    return name is not None and any(name.startswith(p) for p in c.STYLE_PREFIXES_HEADING)
 
 
 def _normalize_headings(document: _Document) -> None:
