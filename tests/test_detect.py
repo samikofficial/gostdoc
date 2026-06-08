@@ -49,6 +49,8 @@ def test_numbered_multilevel_headings_detected(load_fixture):
     assert _by_text(doc, "1.1.1 Подробности").style.name == "Heading 3"
     # Реальный провал doc06: номер без пробела после точки, уровень считаем верно.
     assert _by_text(doc, "3.2.Особенности").style.name == "Heading 2"
+    # Реальный провал doc05: глава с римским номером → Heading 1.
+    assert _by_text(doc, "ГЛАВА II. Экспериментальная").style.name == "Heading 1"
 
 
 def test_structural_promoted_over_existing_heading(load_fixture):

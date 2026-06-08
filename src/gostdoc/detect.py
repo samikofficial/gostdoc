@@ -37,6 +37,8 @@ from .classify import (
 
 # Заголовок — короткий (это название, не предложение).
 _MAX_HEADING_LEN = 100
+# Главы бывают с длинным названием; ключевое слово ГЛАВА/РАЗДЕЛ + номер — сильный сигнал.
+_MAX_CHAPTER_LEN = 150
 _MAX_STRUCT_LEN = 70
 
 _LEADER = re.compile(r"[.…]{3,}")
@@ -45,7 +47,8 @@ _TRAILING_PAGE = re.compile(r"\s+\d{1,4}\s*$")
 # После номера допускаем отсутствие пробела («3.2.Текст» — реальный случай), но требуем
 # букву сразу за номером, чтобы не цеплять версии/«2.1)».
 _NUMBERED_MULTILEVEL = re.compile(r"^\s*(\d+(?:\.\d+)+)\.?\s*[^\W\d_]")
-_CHAPTER = re.compile(r"^\s*(ГЛАВА|РАЗДЕЛ)\s+\d", re.IGNORECASE)
+# Глава/раздел с арабским ИЛИ римским номером («ГЛАВА 2», «ГЛАВА II», «ГЛАВА III»).
+_CHAPTER = re.compile(r"^\s*(ГЛАВА|РАЗДЕЛ)\s+(\d+|[IVXLCDM]+)\b", re.IGNORECASE)
 
 # Подпись: ключевое слово + номер + разделитель (— . :) ИЛИ конец строки.
 # Разделитель отсекает ссылки в тексте («Рисунок 1 показывает …»).
@@ -135,7 +138,7 @@ def detect_and_mark(document: _Document) -> list[str]:
         if category == CATEGORY_HEADING:
             continue
 
-        if _CHAPTER.match(text) and len(text) <= _MAX_HEADING_LEN:
+        if _CHAPTER.match(text) and len(text) <= _MAX_CHAPTER_LEN:
             _set_style(document, paragraph, "Heading 1")
             log.append(f"заголовок главы: {text[:45]!r} → Heading 1")
             continue
