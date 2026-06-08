@@ -8,13 +8,14 @@
 
 from __future__ import annotations
 
-from docx.enum.text import WD_LINE_SPACING
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.text.paragraph import Paragraph
 
 from . import constants as c
 from .classify import (
     CATEGORY_BODY,
     CATEGORY_CAPTION,
+    CATEGORY_HEADING,
     CATEGORY_LIST_ITEM,
     CATEGORY_TABLE_CELL,
 )
@@ -56,3 +57,12 @@ def apply_paragraph_format(paragraph: Paragraph, category: str) -> None:
         _zero_vertical_spacing(pf)
         pf.first_line_indent = c.NO_FIRST_LINE_INDENT
         # Выравнивание подписи не навязываем агрессивно.
+
+    elif category == CATEGORY_HEADING:
+        # keep_with_next — заголовок не должен висеть внизу страницы без текста.
+        pf.keep_with_next = True
+        # Центрированные (структурные элементы) оставляем по центру и без отступа.
+        # Нумерованные/прочие — слева с абзацного отступа (7.32 п.6.2.3).
+        if pf.alignment != WD_ALIGN_PARAGRAPH.CENTER:
+            pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            pf.first_line_indent = c.FIRST_LINE_INDENT

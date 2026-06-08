@@ -45,6 +45,12 @@ _TRAILING_PAGE = re.compile(r"\s+\d{1,4}\s*$")
 _NUMBERED_MULTILEVEL = re.compile(r"^\s*(\d+(?:\.\d+)+)\.?\s+\S")
 _CHAPTER = re.compile(r"^\s*(ГЛАВА|РАЗДЕЛ)\s+\d", re.IGNORECASE)
 
+# Подпись: ключевое слово + номер + разделитель (— . :) ИЛИ конец строки.
+# Разделитель отсекает ссылки в тексте («Рисунок 1 показывает …»).
+_FIG_CAPTION = re.compile(r"^\s*(Рисунок|Рис\.)\s*\d+(?:\.\d+)*\s*([—–\-.:]|$)")
+_TBL_CAPTION = re.compile(r"^\s*(Таблица|Табл\.)\s*\d+(?:\.\d+)*\s*([—–\-.:]|$)")
+_MAX_CAPTION_LEN = 200
+
 
 def _normalize_struct_text(text: str) -> str:
     cleaned = _LEADER.sub(" ", text)
@@ -57,7 +63,7 @@ def _is_struct_word(text: str) -> bool:
     return norm in c.STRUCT_WORDS or any(norm.startswith(p) for p in c.STRUCT_PREFIXES)
 
 
-def _ensure_heading_style(document: _Document, name: str):
+def _ensure_style(document: _Document, name: str):
     try:
         return document.styles[name]
     except KeyError:
@@ -78,7 +84,7 @@ def _apply_display_caps(paragraph: Paragraph) -> None:
 
 
 def _set_style(document: _Document, paragraph: Paragraph, name: str) -> None:
-    _ensure_heading_style(document, name)
+    _ensure_style(document, name)
     paragraph.style = document.styles[name]
 
 
@@ -92,6 +98,11 @@ def _mark_structural(document: _Document, paragraph: Paragraph) -> None:
 def _numbered_level(text: str) -> int:
     token = text.split()[0].rstrip(".")
     return min(token.count(".") + 1, 3)
+
+
+def _mark_caption(document: _Document, paragraph: Paragraph, centered: bool) -> None:
+    _set_style(document, paragraph, "Caption")
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER if centered else WD_ALIGN_PARAGRAPH.LEFT
 
 
 def detect_and_mark(document: _Document) -> list[str]:
@@ -123,5 +134,15 @@ def detect_and_mark(document: _Document) -> list[str]:
             level = _numbered_level(text)
             _set_style(document, paragraph, f"Heading {level}")
             log.append(f"нумерованный заголовок ур.{level}: {text[:45]!r} → Heading {level}")
+            continue
+
+        if len(text) <= _MAX_CAPTION_LEN and _FIG_CAPTION.match(text):
+            _mark_caption(document, paragraph, centered=True)
+            log.append(f"подпись рисунка: {text[:45]!r} → Caption (по центру)")
+            continue
+
+        if len(text) <= _MAX_CAPTION_LEN and _TBL_CAPTION.match(text):
+            _mark_caption(document, paragraph, centered=False)
+            log.append(f"наименование таблицы: {text[:45]!r} → Caption (слева)")
 
     return log

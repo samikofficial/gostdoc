@@ -9,6 +9,7 @@ from gostdoc import constants as c
 from gostdoc.classify import (
     CATEGORY_BODY,
     CATEGORY_CAPTION,
+    CATEGORY_HEADING,
     CATEGORY_LIST_ITEM,
     CATEGORY_TABLE_CELL,
 )
@@ -64,3 +65,29 @@ def test_caption_no_indent_single_spacing():
     apply_paragraph_format(p, CATEGORY_CAPTION)
     assert lengths_equal(p.paragraph_format.first_line_indent, Cm(0))
     assert p.paragraph_format.line_spacing_rule == WD_LINE_SPACING.SINGLE
+
+
+def test_numbered_heading_layout():
+    from docx import Document
+
+    doc = Document()
+    p = doc.add_paragraph("1.1 Название подраздела")
+    apply_paragraph_format(p, CATEGORY_HEADING)
+    pf = p.paragraph_format
+    assert pf.alignment == WD_ALIGN_PARAGRAPH.LEFT
+    assert lengths_equal(pf.first_line_indent, Cm(1.25))  # с абзацного отступа (7.32 п.6.2.3)
+    assert pf.keep_with_next is True  # заголовок не отрывается от текста
+
+
+def test_structural_heading_keeps_center():
+    from docx import Document
+
+    doc = Document()
+    p = doc.add_paragraph("ВВЕДЕНИЕ")
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER  # структурный элемент центрирован
+    apply_paragraph_format(p, CATEGORY_HEADING)
+    pf = p.paragraph_format
+    assert pf.alignment == WD_ALIGN_PARAGRAPH.CENTER  # центр сохранён
+    assert pf.keep_with_next is True
+    # отступ первой строки центрированному не навязываем
+    assert not pf.first_line_indent

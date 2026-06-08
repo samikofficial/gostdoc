@@ -330,6 +330,19 @@ def unmarked_structure(path: Path) -> None:
         12,
     )
 
+    # Подписи (должны распознаться как Caption).
+    _set_run(doc.add_paragraph().add_run("Рисунок 1 — Схема процесса"), "Calibri", 12)
+    _set_run(doc.add_paragraph().add_run("Рис. 1.1. Роль управления"), "Calibri", 12)
+    _set_run(doc.add_paragraph().add_run("Таблица 2 — Основные показатели"), "Calibri", 12)
+    # ЛОЖНОЕ срабатывание — ссылка на рисунок в тексте (после номера нет разделителя).
+    _set_run(
+        doc.add_paragraph().add_run(
+            "Рисунок 1 показывает устойчивый рост ключевых показателей за пятилетний период."
+        ),
+        "Calibri",
+        12,
+    )
+
     # Ещё структурные элементы как Normal (в т.ч. в нижнем регистре — проверка caps).
     _set_run(doc.add_paragraph().add_run("Заключение"), "Calibri", 14)
     _set_run(doc.add_paragraph().add_run("СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ"), "Calibri", 14)

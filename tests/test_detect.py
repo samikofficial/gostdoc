@@ -66,6 +66,26 @@ def test_toc_lines_protected_not_marked(load_fixture):
     assert _by_text(doc, "1.1 История вопроса .....").style.name == "Normal"
 
 
+def test_captions_detected(load_fixture):
+    doc = load_fixture("unmarked_structure.docx")
+    detect_and_mark(doc)
+    fig = _by_text(doc, "Рисунок 1 — Схема")
+    fig_abbr = _by_text(doc, "Рис. 1.1.")
+    tbl = _by_text(doc, "Таблица 2 —")
+    assert fig.style.name == "Caption"
+    assert fig.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert fig_abbr.style.name == "Caption"
+    assert tbl.style.name == "Caption"
+    assert tbl.alignment == WD_ALIGN_PARAGRAPH.LEFT
+
+
+def test_figure_reference_in_text_not_caption(load_fixture):
+    doc = load_fixture("unmarked_structure.docx")
+    detect_and_mark(doc)
+    # «Рисунок 1 показывает …» — ссылка в тексте, не подпись.
+    assert _by_text(doc, "Рисунок 1 показывает").style.name == "Normal"
+
+
 def test_detect_preserves_text_invariant(fixtures_dir, tmp_path):
     src = fixtures_dir / "unmarked_structure.docx"
     before = extract_body_text(Document(str(src)))
