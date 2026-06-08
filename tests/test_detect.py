@@ -11,6 +11,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 
 from gostdoc.classify import CATEGORY_HEADING, classify_paragraph
+from gostdoc.cli import EXIT_OK, main
 from gostdoc.detect import detect_and_mark
 from gostdoc.formatter import extract_body_text, format_document
 
@@ -103,9 +104,25 @@ def test_detect_log_returned(fixtures_dir, tmp_path):
     assert any("Фаза 2" in m for m in messages)
 
 
-def test_default_does_not_detect(fixtures_dir, tmp_path):
-    # Без флага Фаза 2 не работает: нумерованный заголовок остаётся Normal.
+def test_library_default_does_not_detect(fixtures_dir, tmp_path):
+    # Библиотечный format_document по умолчанию консервативен (детекция выключена).
     out = tmp_path / "out.docx"
     format_document(str(fixtures_dir / "unmarked_structure.docx"), str(out))
+    doc = Document(str(out))
+    assert _by_text(doc, "1.1 История возникновения").style.name == "Normal"
+
+
+def test_cli_detects_by_default(fixtures_dir, tmp_path):
+    # CLI по умолчанию включает детекцию.
+    out = tmp_path / "o.docx"
+    assert main([str(fixtures_dir / "unmarked_structure.docx"), "-o", str(out)]) == EXIT_OK
+    doc = Document(str(out))
+    assert _by_text(doc, "1.1 История возникновения").style.name == "Heading 2"
+
+
+def test_cli_no_detect_flag_disables(fixtures_dir, tmp_path):
+    out = tmp_path / "o.docx"
+    rc = main([str(fixtures_dir / "unmarked_structure.docx"), "-o", str(out), "--no-detect-structure"])
+    assert rc == EXIT_OK
     doc = Document(str(out))
     assert _by_text(doc, "1.1 История возникновения").style.name == "Normal"

@@ -39,8 +39,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--detect-structure",
-        action="store_true",
-        help="Фаза 2: распознать неразмеченные заголовки/структурные элементы (обратимо, с логом)",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="распознавать неразмеченные заголовки/структурные элементы (по умолчанию вкл; "
+        "--no-detect-structure отключает, оставляя только чистое v0-форматирование)",
     )
     return parser
 
