@@ -42,7 +42,9 @@ _MAX_STRUCT_LEN = 70
 _LEADER = re.compile(r"[.…]{3,}")
 _TRAILING_PAGE = re.compile(r"\s+\d{1,4}\s*$")
 # Многоуровневый номер: минимум два уровня (N.N…), отсекает одноуровневые поля/списки.
-_NUMBERED_MULTILEVEL = re.compile(r"^\s*(\d+(?:\.\d+)+)\.?\s+\S")
+# После номера допускаем отсутствие пробела («3.2.Текст» — реальный случай), но требуем
+# букву сразу за номером, чтобы не цеплять версии/«2.1)».
+_NUMBERED_MULTILEVEL = re.compile(r"^\s*(\d+(?:\.\d+)+)\.?\s*[^\W\d_]")
 _CHAPTER = re.compile(r"^\s*(ГЛАВА|РАЗДЕЛ)\s+\d", re.IGNORECASE)
 
 # Подпись: ключевое слово + номер + разделитель (— . :) ИЛИ конец строки.
@@ -52,9 +54,14 @@ _TBL_CAPTION = re.compile(r"^\s*(Таблица|Табл\.)\s*\d+(?:\.\d+)*\s*([
 _MAX_CAPTION_LEN = 200
 
 
+_LEADING_NUMBER = re.compile(r"^\s*\d+\.?\s+")
+
+
 def _normalize_struct_text(text: str) -> str:
     cleaned = _LEADER.sub(" ", text)
     cleaned = _TRAILING_PAGE.sub("", cleaned)
+    # Снимаем ведущий номер («5. Список использованных источников» → структурный).
+    cleaned = _LEADING_NUMBER.sub("", cleaned)
     return cleaned.strip().rstrip(".:").strip().upper()
 
 
@@ -95,9 +102,9 @@ def _mark_structural(document: _Document, paragraph: Paragraph) -> None:
     _apply_display_caps(paragraph)
 
 
-def _numbered_level(text: str) -> int:
-    token = text.split()[0].rstrip(".")
-    return min(token.count(".") + 1, 3)
+def _numbered_level(number: str) -> int:
+    """Уровень заголовка по номеру: «1.1» → 2, «1.1.1» → 3 (макс. 3)."""
+    return min(number.count(".") + 1, 3)
 
 
 def _mark_caption(document: _Document, paragraph: Paragraph, centered: bool) -> None:
@@ -126,12 +133,9 @@ def detect_and_mark(document: _Document) -> list[str]:
             log.append(f"заголовок главы: {text[:45]!r} → Heading 1")
             continue
 
-        if (
-            _NUMBERED_MULTILEVEL.match(text)
-            and len(text) <= _MAX_HEADING_LEN
-            and not _has_numbering(paragraph)
-        ):
-            level = _numbered_level(text)
+        numbered = _NUMBERED_MULTILEVEL.match(text)
+        if numbered and len(text) <= _MAX_HEADING_LEN and not _has_numbering(paragraph):
+            level = _numbered_level(numbered.group(1))
             _set_style(document, paragraph, f"Heading {level}")
             log.append(f"нумерованный заголовок ур.{level}: {text[:45]!r} → Heading {level}")
             continue

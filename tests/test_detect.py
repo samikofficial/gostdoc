@@ -47,6 +47,17 @@ def test_numbered_multilevel_headings_detected(load_fixture):
     detect_and_mark(doc)
     assert _by_text(doc, "1.1 История возникновения").style.name == "Heading 2"
     assert _by_text(doc, "1.1.1 Подробности").style.name == "Heading 3"
+    # Реальный провал doc06: номер без пробела после точки, уровень считаем верно.
+    assert _by_text(doc, "3.2.Особенности").style.name == "Heading 2"
+
+
+def test_numbered_structural_element_detected(load_fixture):
+    # Реальный провал doc02: «5. Список использованных источников» с ведущим номером.
+    doc = load_fixture("unmarked_structure.docx")
+    detect_and_mark(doc)
+    p = _by_text(doc, "5. Список использованных источников")
+    assert classify_paragraph(p, in_table=False) == CATEGORY_HEADING
+    assert p.alignment == WD_ALIGN_PARAGRAPH.CENTER
 
 
 def test_false_positives_not_marked(load_fixture):

@@ -313,6 +313,8 @@ def unmarked_structure(path: Path) -> None:
     _set_run(doc.add_paragraph().add_run("1.1 История возникновения вопроса"), "Calibri", 12)
     _set_run(doc.add_paragraph().add_run("Содержательный абзац подраздела."), "Calibri", 12)
     _set_run(doc.add_paragraph().add_run("1.1.1 Подробности и детали"), "Calibri", 12)
+    # Реальный провал (doc06): многоуровневый номер без пробела после точки.
+    _set_run(doc.add_paragraph().add_run("3.2.Особенности без пробела после номера"), "Calibri", 12)
 
     # ЛОЖНЫЕ срабатывания — НЕ заголовки:
     # поле-задание (одноуровневое, длинное, двоеточие)
@@ -348,6 +350,8 @@ def unmarked_structure(path: Path) -> None:
     # Ещё структурные элементы как Normal (в т.ч. в нижнем регистре — проверка caps).
     _set_run(doc.add_paragraph().add_run("Заключение"), "Calibri", 14)
     _set_run(doc.add_paragraph().add_run("СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ"), "Calibri", 14)
+    # Реальный провал (doc02): структурный элемент с ведущим номером.
+    _set_run(doc.add_paragraph().add_run("5. Список использованных источников"), "Calibri", 14)
     doc.save(str(path))
 
 
