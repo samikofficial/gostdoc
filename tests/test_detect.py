@@ -103,6 +103,8 @@ def test_toc_lines_protected_not_marked(load_fixture):
     assert _by_text(doc, "Раздел 2. Проблема интертекста").style.name == "Normal"
     # Реальный провал из doc04: короткий лидер из двух точек («..20»).
     assert _by_text(doc, "1.2.1. Основные подходы к изучению").style.name == "Normal"
+    # Реальный провал из web01/web02: TOC-строка с табом-лидером + номер.
+    assert _by_text(doc, "Глава 5. Название с табуляцией").style.name == "Normal"
 
 
 def test_captions_detected(load_fixture):

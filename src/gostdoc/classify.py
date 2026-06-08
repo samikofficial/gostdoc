@@ -30,16 +30,17 @@ CATEGORY_EMPTY = "empty"
 
 _EMBEDDED_TAGS = ("w:drawing", "w:object", "w:pict")
 
-# Строка оглавления: прогон из 2+ точечных лидеров (.. или …) где-либо в строке
-# И номер страницы в конце. Лидеры бывают разбиты пробелами («…….. .…19») и короткими
-# («..20»), поэтому не требуем их впритык. Связка «лидер + хвостовой номер» высокоточна —
-# проза так не выглядит.
+# Строка оглавления: номер страницы в конце И лидер до него — точечный (.. или …,
+# бывает разбит пробелами/коротким) ИЛИ табуляция (w:tab → "\t" в тексте). Связка
+# «лидер/таб + хвостовой номер» высокоточна — обычная проза/заголовок так не выглядят.
 _TOC_LEADER_RUN = re.compile(r"[.…]{2,}")
 _ENDS_WITH_PAGE_NO = re.compile(r"\d\s*$")
 
 
 def _is_toc_line(text: str) -> bool:
-    return bool(_TOC_LEADER_RUN.search(text)) and bool(_ENDS_WITH_PAGE_NO.search(text))
+    if not _ENDS_WITH_PAGE_NO.search(text):
+        return False
+    return bool(_TOC_LEADER_RUN.search(text)) or "\t" in text
 
 
 def _is_empty(paragraph: Paragraph) -> bool:
