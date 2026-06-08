@@ -19,7 +19,7 @@ from docx.document import Document as _Document
 from docx.oxml.ns import qn
 from docx.table import Table
 
-from . import classify, constants as c, paragraphs, runs, sections, styles
+from . import classify, constants as c, detect, paragraphs, runs, sections, styles
 from .xml_utils import lengths_equal, paragraph_has_page_field
 
 _OLE2_MAGIC = b"\xd0\xcf\x11\xe0"
@@ -138,28 +138,39 @@ def detect_warnings(document: _Document) -> list[str]:
     root = document.element
     if any(root.findall(".//" + qn(tag)) for tag in _REVISION_TAGS):
         warnings.append(
-            "В документе есть исправления (режим рецензирования). Оформление приведено "
-            "к ГОСТ, но итог может выглядеть иначе после принятия/отклонения правок."
+            "Предупреждение: в документе есть исправления (режим рецензирования). Оформление "
+            "приведено к ГОСТ, но итог может выглядеть иначе после принятия/отклонения правок."
         )
     if root.findall(".//" + qn("w:commentReference")):
-        warnings.append("В документе есть комментарии — они сохранены без изменений.")
+        warnings.append("Предупреждение: в документе есть комментарии — они сохранены без изменений.")
     return warnings
 
 
-def format_document(input_path: str, output_path: str) -> list[str]:
+def format_document(
+    input_path: str, output_path: str, detect_structure: bool = False
+) -> list[str]:
     """Привести оформление input_path к ГОСТ 7.32-2017 и сохранить в output_path.
 
-    Возвращает список неблокирующих предупреждений (исправления/комментарии).
+    detect_structure=True включает Фазу 2 (распознавание неразмеченных заголовков/
+    структурных элементов) — обратимую и логируемую.
+
+    Возвращает список сообщений: предупреждения (исправления/комментарии) и, если
+    включена Фаза 2, лог авторазметки.
     """
     document = _validate_and_open(input_path)
-    warnings = detect_warnings(document)
+    messages = detect_warnings(document)
+    if detect_structure:
+        marked = detect.detect_and_mark(document)
+        if marked:
+            messages.append(f"Фаза 2: размечено элементов структуры — {len(marked)}.")
+            messages.extend(f"  {line}" for line in marked)
     styles.normalize_styles(document)
     sections.normalize_margins(document)
     sections.setup_page_numbering(document)
     _normalize_body(document)
     _normalize_header_footer_fonts(document)
     document.save(output_path)
-    return warnings
+    return messages
 
 
 def check_compliance(document: _Document) -> list[str]:

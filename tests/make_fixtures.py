@@ -290,6 +290,52 @@ def mirror_margins(path: Path) -> None:
     doc.save(str(path))
 
 
+def unmarked_structure(path: Path) -> None:
+    """Неразмеченная структура как в реальных ВКР (для Фазы 2).
+
+    Кодирует реальные паттерны и ЛОЖНЫЕ срабатывания, найденные на 5 настоящих ВКР:
+    структурные элементы и нумерованные заголовки под стилем Normal, плюс
+    TOC-строки с лидерами, поля-задания и пункты списков, которые трогать нельзя.
+    """
+    doc = Document()
+
+    # TOC-строки (точечные лидеры + номер страницы) — НЕ заголовки, защитить.
+    _set_run(doc.add_paragraph().add_run("ВВЕДЕНИЕ ............................. 3"), "Calibri", 12)
+    _set_run(doc.add_paragraph().add_run("1.1 История вопроса ................. 5"), "Calibri", 12)
+
+    # Структурный элемент как Normal (должен распознаться).
+    _set_run(doc.add_paragraph().add_run("ВВЕДЕНИЕ"), "Calibri", 14)
+    _set_run(doc.add_paragraph().add_run("Текст введения про актуальность темы исследования."), "Calibri", 12)
+
+    # Нумерованные многоуровневые заголовки как Normal (должны распознаться).
+    _set_run(doc.add_paragraph().add_run("1.1 История возникновения вопроса"), "Calibri", 12)
+    _set_run(doc.add_paragraph().add_run("Содержательный абзац подраздела."), "Calibri", 12)
+    _set_run(doc.add_paragraph().add_run("1.1.1 Подробности и детали"), "Calibri", 12)
+
+    # ЛОЖНЫЕ срабатывания — НЕ заголовки:
+    # поле-задание (одноуровневое, длинное, двоеточие)
+    _set_run(
+        doc.add_paragraph().add_run(
+            "1. Тема: разработка мероприятий по оптимизации производственного процесса предприятия"
+        ),
+        "Calibri",
+        12,
+    )
+    # пункт списка (одноуровневый, длинный, предложение)
+    _set_run(
+        doc.add_paragraph().add_run(
+            "1. Кубики Кооса. Ребенку дают 16 небольших кубиков и просят собрать узор по образцу."
+        ),
+        "Calibri",
+        12,
+    )
+
+    # Ещё структурные элементы как Normal (в т.ч. в нижнем регистре — проверка caps).
+    _set_run(doc.add_paragraph().add_run("Заключение"), "Calibri", 14)
+    _set_run(doc.add_paragraph().add_run("СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ"), "Calibri", 14)
+    doc.save(str(path))
+
+
 def legacy_doc(path: Path) -> None:
     """Псевдо-.doc со старой OLE2-сигнатурой (для проверки ошибки формата)."""
     ole2_magic = bytes([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1])
@@ -315,6 +361,7 @@ BUILDERS = {
     "with_hyperlink.docx": with_hyperlink,
     "with_revisions.docx": with_revisions,
     "mirror_margins.docx": mirror_margins,
+    "unmarked_structure.docx": unmarked_structure,
 }
 
 

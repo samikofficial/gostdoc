@@ -37,6 +37,11 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="не записывать файл, только проверить соответствие ГОСТ",
     )
+    parser.add_argument(
+        "--detect-structure",
+        action="store_true",
+        help="Фаза 2: распознать неразмеченные заголовки/структурные элементы (обратимо, с логом)",
+    )
     return parser
 
 
@@ -54,10 +59,10 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_OK
 
         output = args.output or _default_output(args.input)
-        warnings = format_document(args.input, output)
+        messages = format_document(args.input, output, detect_structure=args.detect_structure)
         print(f"Готово: {output}")
-        for warning in warnings:
-            print(f"Предупреждение: {warning}")
+        for message in messages:
+            print(message)
         return EXIT_OK
     except GostDocError as exc:
         print(f"Ошибка: {exc}", file=sys.stderr)
