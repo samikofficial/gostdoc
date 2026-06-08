@@ -11,3 +11,5 @@ tests/fixtures/*.docx
 tests/fixtures/*.doc
 *.gost.docx
 samples/
+
+metodichki/

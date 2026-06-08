@@ -33,8 +33,11 @@ def _setup_console() -> None:
         except Exception:  # noqa: BLE001 — косметика вывода, не критично
             pass
     for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
         try:
-            stream.reconfigure(encoding="utf-8", errors="replace")
+            reconfigure(encoding="utf-8", errors="replace")
         except Exception:  # noqa: BLE001
             pass
 
