@@ -89,6 +89,8 @@ def test_false_positives_not_marked(load_fixture):
     # Поле-задание и пункт списка (одноуровневые «1.») — НЕ заголовки.
     assert _by_text(doc, "1. Тема:").style.name == "Normal"
     assert _by_text(doc, "1. Кубики Кооса").style.name == "Normal"
+    # Код специальности с титула (XX.XX.XX) — НЕ заголовок (реальный провал Ivanov/Nikitina).
+    assert _by_text(doc, "44.03.01 Педагогическое").style.name == "Normal"
     # Обычный абзац тела — не тронут.
     assert _by_text(doc, "Текст введения").style.name == "Normal"
 

@@ -353,6 +353,8 @@ def unmarked_structure(path: Path) -> None:
         "Calibri",
         12,
     )
+    # код специальности с титула (XX.XX.XX) — НЕ заголовок раздела (реальный провал Ivanov/Nikitina).
+    _set_run(doc.add_paragraph().add_run("44.03.01 Педагогическое образование"), "Calibri", 12)
 
     # Подписи (должны распознаться как Caption).
     _set_run(doc.add_paragraph().add_run("Рисунок 1 — Схема процесса"), "Calibri", 12)

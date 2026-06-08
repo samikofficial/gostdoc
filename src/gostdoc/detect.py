@@ -45,6 +45,9 @@ _TRAILING_PAGE = re.compile(r"\s+\d{1,4}\s*$")
 # После номера допускаем отсутствие пробела («3.2.Текст» — реальный случай), но требуем
 # букву сразу за номером, чтобы не цеплять версии/«2.1)».
 _NUMBERED_MULTILEVEL = re.compile(r"^\s*(\d+(?:\.\d+)+)\.?\s*[^\W\d_]")
+# Код специальности/направления на титуле («44.03.01 …», «09.03.03 …») — двузначные
+# группы. Разделы так не нумеруют (нет главы «44»), поэтому это НЕ заголовок.
+_SPECIALTY_CODE = re.compile(r"^\s*\d{2}\.\d{2}\.\d{2}")
 # Одноуровневый номер главы («1 Название», «1. Название»). Сам по себе ненадёжен
 # (совпадает с полями/пунктами списков), поэтому применяется только к полужирным
 # абзацам без середины предложения (см. detect_and_mark).
@@ -153,7 +156,12 @@ def detect_and_mark(document: _Document) -> list[str]:
             continue
 
         numbered = _NUMBERED_MULTILEVEL.match(text)
-        if numbered and len(text) <= _MAX_HEADING_LEN and not _has_numbering(paragraph):
+        if (
+            numbered
+            and not _SPECIALTY_CODE.match(text)
+            and len(text) <= _MAX_HEADING_LEN
+            and not _has_numbering(paragraph)
+        ):
             level = _numbered_level(numbered.group(1))
             _set_style(document, paragraph, f"Heading {level}")
             log.append(f"нумерованный заголовок ур.{level}: {text[:45]!r} → Heading {level}")
