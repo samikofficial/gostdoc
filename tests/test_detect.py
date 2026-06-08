@@ -51,6 +51,18 @@ def test_numbered_multilevel_headings_detected(load_fixture):
     assert _by_text(doc, "3.2.Особенности").style.name == "Heading 2"
     # Реальный провал doc05: глава с римским номером → Heading 1.
     assert _by_text(doc, "ГЛАВА II. Экспериментальная").style.name == "Heading 1"
+    # Реальный провал doc08: одноуровневая полужирная глава → Heading 1.
+    assert _by_text(doc, "1 Теоретические основы исследуемого").style.name == "Heading 1"
+    # Реальный провал doc08: длинный (>100) многоуровневый подзаголовок → Heading 2.
+    assert _by_text(doc, "2.1 Система показателей").style.name == "Heading 2"
+
+
+def test_single_level_requires_bold(load_fixture):
+    # Одноуровневые НЕ полужирные «1. …» (поле/пункт списка) заголовками не становятся.
+    doc = load_fixture("unmarked_structure.docx")
+    detect_and_mark(doc)
+    assert _by_text(doc, "1. Тема:").style.name == "Normal"
+    assert _by_text(doc, "1. Кубики Кооса").style.name == "Normal"
 
 
 def test_structural_promoted_over_existing_heading(load_fixture):

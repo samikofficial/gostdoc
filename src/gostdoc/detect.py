@@ -35,10 +35,8 @@ from .classify import (
     classify_paragraph,
 )
 
-# Заголовок — короткий (это название, не предложение).
-_MAX_HEADING_LEN = 100
-# Главы бывают с длинным названием; ключевое слово ГЛАВА/РАЗДЕЛ + номер — сильный сигнал.
-_MAX_CHAPTER_LEN = 150
+# Заголовок — название, не предложение, но бывает длинным (до ~150 символов).
+_MAX_HEADING_LEN = 150
 _MAX_STRUCT_LEN = 70
 
 _LEADER = re.compile(r"[.…]{3,}")
@@ -47,6 +45,12 @@ _TRAILING_PAGE = re.compile(r"\s+\d{1,4}\s*$")
 # После номера допускаем отсутствие пробела («3.2.Текст» — реальный случай), но требуем
 # букву сразу за номером, чтобы не цеплять версии/«2.1)».
 _NUMBERED_MULTILEVEL = re.compile(r"^\s*(\d+(?:\.\d+)+)\.?\s*[^\W\d_]")
+# Одноуровневый номер главы («1 Название», «1. Название»). Сам по себе ненадёжен
+# (совпадает с полями/пунктами списков), поэтому применяется только к полужирным
+# абзацам без середины предложения (см. detect_and_mark).
+_SINGLE_NUMBERED = re.compile(r"^\s*\d+\.?\s+[^\W\d_]")
+# Граница предложения/клаузы — признак прозы/поля, а не заголовка («1. Тема: …», «… Кооса. Ребёнку…»).
+_CLAUSE_BOUNDARY = re.compile(r"[.:;]\s")
 # Глава/раздел с арабским ИЛИ римским номером («ГЛАВА 2», «ГЛАВА II», «ГЛАВА III»).
 _CHAPTER = re.compile(r"^\s*(ГЛАВА|РАЗДЕЛ)\s+(\d+|[IVXLCDM]+)\b", re.IGNORECASE)
 
@@ -110,6 +114,11 @@ def _numbered_level(number: str) -> int:
     return min(number.count(".") + 1, 3)
 
 
+def _all_runs_bold(paragraph: Paragraph) -> bool:
+    runs = [r for r in paragraph.runs if r.text.strip()]
+    return bool(runs) and all(r.bold for r in runs)
+
+
 def _mark_caption(document: _Document, paragraph: Paragraph, centered: bool) -> None:
     _set_style(document, paragraph, "Caption")
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER if centered else WD_ALIGN_PARAGRAPH.LEFT
@@ -138,7 +147,7 @@ def detect_and_mark(document: _Document) -> list[str]:
         if category == CATEGORY_HEADING:
             continue
 
-        if _CHAPTER.match(text) and len(text) <= _MAX_CHAPTER_LEN:
+        if _CHAPTER.match(text) and len(text) <= _MAX_HEADING_LEN:
             _set_style(document, paragraph, "Heading 1")
             log.append(f"заголовок главы: {text[:45]!r} → Heading 1")
             continue
@@ -148,6 +157,19 @@ def detect_and_mark(document: _Document) -> list[str]:
             level = _numbered_level(numbered.group(1))
             _set_style(document, paragraph, f"Heading {level}")
             log.append(f"нумерованный заголовок ур.{level}: {text[:45]!r} → Heading {level}")
+            continue
+
+        # Одноуровневая глава («1 Название») — только если полужирная, без середины
+        # предложения и без списочной нумерации (иначе ловятся поля «1. Тема:» и пункты).
+        if (
+            _SINGLE_NUMBERED.match(text)
+            and _all_runs_bold(paragraph)
+            and len(text) <= _MAX_HEADING_LEN
+            and not _CLAUSE_BOUNDARY.search(text)
+            and not _has_numbering(paragraph)
+        ):
+            _set_style(document, paragraph, "Heading 1")
+            log.append(f"заголовок главы (одноуровневый): {text[:45]!r} → Heading 1")
             continue
 
         if len(text) <= _MAX_CAPTION_LEN and _FIG_CAPTION.match(text):
