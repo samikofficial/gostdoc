@@ -20,7 +20,10 @@ from docx.oxml.ns import qn
 from docx.table import Table
 
 from . import classify, constants as c, detect, paragraphs, runs, sections, styles
+from .profile import GOST, PageNumberPosition, Profile
 from .xml_utils import lengths_equal, paragraph_has_page_field
+
+_EMU_PER_MM = 36000
 
 _OLE2_MAGIC = b"\xd0\xcf\x11\xe0"
 _ZIP_MAGIC = b"PK"
@@ -61,7 +64,7 @@ def _validate_and_open(input_path: str) -> _Document:
         ) from exc
 
 
-def _normalize_runs_in_paragraph(paragraph, category: str) -> None:
+def _normalize_runs_in_paragraph(paragraph, category: str, profile: Profile) -> None:
     is_heading = category == classify.CATEGORY_HEADING
     # Включаем run'ы внутри гиперссылок (подв. камень №17): иначе они остаются Calibri.
     run_list = list(paragraph.runs)
@@ -69,34 +72,34 @@ def _normalize_runs_in_paragraph(paragraph, category: str) -> None:
         run_list.extend(hyperlink.runs)
     for run in run_list:
         if is_heading:
-            runs.normalize_heading_run(run)
+            runs.normalize_heading_run(run, bold=profile.bold_headings)
         else:
             runs.normalize_run(run)
 
 
-def _process_paragraph(paragraph, in_table: bool) -> None:
+def _process_paragraph(paragraph, in_table: bool, profile: Profile) -> None:
     category = classify.classify_paragraph(paragraph, in_table)
     paragraphs.apply_paragraph_format(paragraph, category)
-    _normalize_runs_in_paragraph(paragraph, category)
+    _normalize_runs_in_paragraph(paragraph, category, profile)
 
 
-def _process_table(table: Table) -> None:
+def _process_table(table: Table, profile: Profile) -> None:
     for row in table.rows:
         for cell in row.cells:
             for paragraph in cell.paragraphs:
-                _process_paragraph(paragraph, in_table=True)
+                _process_paragraph(paragraph, in_table=True, profile=profile)
             for nested in cell.tables:  # вложенные таблицы
-                _process_table(nested)
+                _process_table(nested, profile)
 
 
-def _normalize_body(document: _Document) -> None:
+def _normalize_body(document: _Document, profile: Profile) -> None:
     for paragraph in document.paragraphs:
-        _process_paragraph(paragraph, in_table=False)
+        _process_paragraph(paragraph, in_table=False, profile=profile)
     for table in document.tables:
-        _process_table(table)
+        _process_table(table, profile)
 
 
-def _normalize_header_footer_fonts(document: _Document) -> None:
+def _normalize_header_footer_fonts(document: _Document, profile: Profile) -> None:
     """Гарнитуру/кегль колонтитулов (включая поле PAGE) — к ГОСТ; формат не трогаем."""
     for section in document.sections:
         for part in (
@@ -107,7 +110,7 @@ def _normalize_header_footer_fonts(document: _Document) -> None:
         ):
             for paragraph in part.paragraphs:
                 for run in paragraph.runs:
-                    runs.normalize_run(run)
+                    runs.normalize_run(run, font_size=profile.page_number_size)
 
 
 def extract_body_text(document: _Document) -> str:
@@ -147,12 +150,16 @@ def detect_warnings(document: _Document) -> list[str]:
 
 
 def format_document(
-    input_path: str, output_path: str, detect_structure: bool = False
+    input_path: str,
+    output_path: str,
+    detect_structure: bool = False,
+    profile: Profile = GOST,
 ) -> list[str]:
     """Привести оформление input_path к ГОСТ 7.32-2017 и сохранить в output_path.
 
     detect_structure=True включает Фазу 2 (распознавание неразмеченных заголовков/
     структурных элементов) — обратимую и логируемую.
+    profile задаёт переопределения под методичку (поля, номер страницы, полужирность).
 
     Возвращает список сообщений: предупреждения (исправления/комментарии) и, если
     включена Фаза 2, лог авторазметки.
@@ -164,30 +171,35 @@ def format_document(
         if marked:
             messages.append(f"Фаза 2: размечено элементов структуры — {len(marked)}.")
             messages.extend(f"  {line}" for line in marked)
-    styles.normalize_styles(document)
-    sections.normalize_margins(document)
-    sections.setup_page_numbering(document)
-    _normalize_body(document)
-    _normalize_header_footer_fonts(document)
+    styles.normalize_styles(document, profile)
+    sections.normalize_margins(document, profile)
+    sections.setup_page_numbering(document, profile)
+    _normalize_body(document, profile)
+    _normalize_header_footer_fonts(document, profile)
     document.save(output_path)
     return messages
 
 
-def check_compliance(document: _Document) -> list[str]:
-    """Вернуть список несоответствий ГОСТ-константам (пусто = соответствует).
+def _mm(value: int) -> int:
+    return round(int(value) / _EMU_PER_MM)
+
+
+def check_compliance(document: _Document, profile: Profile = GOST) -> list[str]:
+    """Вернуть список несоответствий профилю (пусто = соответствует).
 
     Проверяем верифицируемые ключевые параметры (поля, шрифт Normal, нумерацию).
     """
     problems: list[str] = []
+    expected = (
+        ("левое", "left_margin", profile.margin_left),
+        ("правое", "right_margin", profile.margin_right),
+        ("верхнее", "top_margin", profile.margin_top),
+        ("нижнее", "bottom_margin", profile.margin_bottom),
+    )
     for i, section in enumerate(document.sections, start=1):
-        if not lengths_equal(section.left_margin, c.MARGIN_LEFT):
-            problems.append(f"Секция {i}: левое поле не равно 30 мм.")
-        if not lengths_equal(section.right_margin, c.MARGIN_RIGHT):
-            problems.append(f"Секция {i}: правое поле не равно 15 мм.")
-        if not lengths_equal(section.top_margin, c.MARGIN_TOP):
-            problems.append(f"Секция {i}: верхнее поле не равно 20 мм.")
-        if not lengths_equal(section.bottom_margin, c.MARGIN_BOTTOM):
-            problems.append(f"Секция {i}: нижнее поле не равно 20 мм.")
+        for label, attr, want in expected:
+            if not lengths_equal(getattr(section, attr), want):
+                problems.append(f"Секция {i}: {label} поле не равно {_mm(want)} мм.")
 
     normal = document.styles["Normal"]
     if normal.font.name != c.FONT_NAME:
@@ -195,15 +207,17 @@ def check_compliance(document: _Document) -> list[str]:
     if normal.font.size != c.FONT_SIZE_BODY:
         problems.append("Стиль «Обычный»: кегль не равен 14 пт.")
 
-    if document.sections:
+    if document.sections and profile.page_number != PageNumberPosition.NONE:
         first = document.sections[0]
+        top = profile.page_number == PageNumberPosition.TOP_RIGHT
+        container = first.header if top else first.footer
         if not first.different_first_page_header_footer:
             problems.append("Не включён особый колонтитул первой страницы (номер на титуле).")
-        if not any(paragraph_has_page_field(p) for p in first.footer.paragraphs):
+        if not any(paragraph_has_page_field(p) for p in container.paragraphs):
             problems.append("В колонтитуле нет поля номера страницы.")
     return problems
 
 
-def check_file(input_path: str) -> list[str]:
-    """Открыть документ (с валидацией формата) и проверить соответствие ГОСТ."""
-    return check_compliance(_validate_and_open(input_path))
+def check_file(input_path: str, profile: Profile = GOST) -> list[str]:
+    """Открыть документ (с валидацией формата) и проверить соответствие профилю."""
+    return check_compliance(_validate_and_open(input_path), profile)

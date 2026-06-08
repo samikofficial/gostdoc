@@ -22,12 +22,15 @@ def normalize_run(run: Run, font_name: str = c.FONT_NAME, font_size=c.FONT_SIZE_
     xml_utils.set_run_color_auto(rpr)
 
 
-def normalize_heading_run(run: Run, font_name: str = c.FONT_NAME, font_size=c.FONT_SIZE_BODY) -> None:
-    """Run заголовка: гарнитура/кегль/цвет + принудительно полужирный, без подчёркивания.
+def normalize_heading_run(
+    run: Run, font_name: str = c.FONT_NAME, font_size=c.FONT_SIZE_BODY, bold: bool = True
+) -> None:
+    """Run заголовка: гарнитура/кегль/цвет + полужирный (по профилю), без подчёркивания.
 
     Полужирность и снятие подчёркивания для заголовков предписаны ГОСТ 7.32-2017
-    (п.6.2.3); прямое форматирование студента (b=False/u=True) перебивается явно.
+    (п.6.2.3); прямое форматирование студента (b/u) перебивается явно. Часть методичек
+    запрещает полужирный — тогда bold=False.
     """
     normalize_run(run, font_name, font_size)
-    run.bold = True
+    run.bold = bold
     run.underline = False

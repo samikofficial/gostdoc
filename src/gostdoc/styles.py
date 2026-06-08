@@ -17,6 +17,7 @@ from docx.oxml.ns import qn
 
 from . import constants as c
 from . import xml_utils
+from .profile import GOST, Profile
 
 
 def _doc_defaults_rpr(document: _Document):
@@ -62,11 +63,11 @@ def _is_heading_name(name: str | None) -> bool:
     return name is not None and any(name.startswith(p) for p in c.STYLE_PREFIXES_HEADING)
 
 
-def _normalize_headings(document: _Document) -> None:
+def _normalize_headings(document: _Document, profile: Profile) -> None:
     for style in document.styles:
         if style.type == WD_STYLE_TYPE.PARAGRAPH and _is_heading_name(style.name):
             _apply_font_to_rpr(style.element.get_or_add_rPr())
-            style.font.bold = True
+            style.font.bold = profile.bold_headings
             style.font.underline = False
 
 
@@ -76,9 +77,9 @@ def _normalize_captions(document: _Document) -> None:
             _apply_font_to_rpr(style.element.get_or_add_rPr())
 
 
-def normalize_styles(document: _Document) -> None:
+def normalize_styles(document: _Document, profile: Profile = GOST) -> None:
     """Привести docDefaults и стили Normal/Heading*/Caption к ГОСТ."""
     _normalize_doc_defaults(document)
     _normalize_normal(document)
-    _normalize_headings(document)
+    _normalize_headings(document, profile)
     _normalize_captions(document)
