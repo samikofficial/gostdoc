@@ -64,6 +64,8 @@ def test_toc_lines_protected_not_marked(load_fixture):
     # Строки оглавления (лидеры + номер страницы) не должны стать заголовками.
     assert _by_text(doc, "ВВЕДЕНИЕ ......").style.name == "Normal"
     assert _by_text(doc, "1.1 История вопроса .....").style.name == "Normal"
+    # Реальный провал из doc06: лидеры разбиты пробелами — тоже должно защищаться.
+    assert _by_text(doc, "Раздел 2. Проблема интертекста").style.name == "Normal"
 
 
 def test_captions_detected(load_fixture):

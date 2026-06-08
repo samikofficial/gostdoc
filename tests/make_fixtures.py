@@ -302,6 +302,8 @@ def unmarked_structure(path: Path) -> None:
     # TOC-строки (точечные лидеры + номер страницы) — НЕ заголовки, защитить.
     _set_run(doc.add_paragraph().add_run("ВВЕДЕНИЕ ............................. 3"), "Calibri", 12)
     _set_run(doc.add_paragraph().add_run("1.1 История вопроса ................. 5"), "Calibri", 12)
+    # Реальный провал (doc06): лидеры разбиты пробелами, номер не впритык.
+    _set_run(doc.add_paragraph().add_run("Раздел 2. Проблема интертекста ……….. .…19"), "Calibri", 12)
 
     # Структурный элемент как Normal (должен распознаться).
     _set_run(doc.add_paragraph().add_run("ВВЕДЕНИЕ"), "Calibri", 14)

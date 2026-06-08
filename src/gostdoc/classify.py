@@ -30,9 +30,15 @@ CATEGORY_EMPTY = "empty"
 
 _EMBEDDED_TAGS = ("w:drawing", "w:object", "w:pict")
 
-# Строка оглавления: точечный лидер (.... или …) и номер страницы в конце.
-# Очень высокоточный признак — обычный текст так не выглядит.
-_TOC_LEADER = re.compile(r"[.…]{3,}\s*\d{1,4}\s*$")
+# Строка оглавления: прогон из 3+ точечных лидеров (.... или …) где-либо в строке
+# И номер страницы в конце. Лидеры бывают разбиты пробелами («…….. .…19»), поэтому
+# не требуем их впритык к номеру. Высокоточный признак — проза так не выглядит.
+_TOC_LEADER_RUN = re.compile(r"[.…]{3,}")
+_ENDS_WITH_PAGE_NO = re.compile(r"\d\s*$")
+
+
+def _is_toc_line(text: str) -> bool:
+    return bool(_TOC_LEADER_RUN.search(text)) and bool(_ENDS_WITH_PAGE_NO.search(text))
 
 
 def _is_empty(paragraph: Paragraph) -> bool:
@@ -83,7 +89,7 @@ def classify_paragraph(paragraph: Paragraph, in_table: bool) -> str:
     if name and _starts_with_any(name, c.STYLE_PREFIXES_TOC):
         return CATEGORY_OTHER
     # Неразмеченная строка оглавления (лидер + номер страницы) — защищаем от body-правил.
-    if _TOC_LEADER.search(paragraph.text):
+    if _is_toc_line(paragraph.text):
         return CATEGORY_OTHER
     if name and _starts_with_any(name, c.STYLE_PREFIXES_HEADING):
         return CATEGORY_HEADING
