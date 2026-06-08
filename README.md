@@ -1,5 +1,7 @@
 # gostdoc
 
+[![CI](https://github.com/samikofficial/gostdoc/actions/workflows/ci.yml/badge.svg)](https://github.com/samikofficial/gostdoc/actions/workflows/ci.yml)
+
 CLI и Python-библиотека: приводят оформление `.docx` (доклад, курсовая, ВКР, отчёт о НИР)
 к **ГОСТ 7.32-2017**. Меняется только оформление — текст автора остаётся побайтно прежним.
 
