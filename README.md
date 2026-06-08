@@ -19,6 +19,8 @@ pip install -e .[dev]
 gostdoc INPUT.docx [-o OUTPUT.docx] [--check] [--no-detect-structure]
 ```
 
+> Без установки Python можно собрать автономный `gostdoc.exe` — см. [packaging/build.md](packaging/build.md).
+
 - Без `-o` результат пишется рядом: `INPUT.gost.docx` (исходник не перезаписывается).
 - `--check` ничего не пишет: проверяет соответствие ГОСТ-константам, печатает несоответствия,
   код выхода `0` (соответствует) или `1` (есть отклонения).

@@ -19,6 +19,26 @@ EXIT_NONCOMPLIANT = 1
 EXIT_ERROR = 2
 
 
+def _setup_console() -> None:
+    """Сделать вывод в консоль безопасным для Unicode (рус. текст, стрелки и т.п.).
+
+    На Windows консоль по умолчанию cp1251 и падает на символах вроде «→».
+    Переключаем кодовую страницу на UTF-8 и поток на utf-8 с заменой непечатаемых.
+    """
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+        except Exception:  # noqa: BLE001 — косметика вывода, не критично
+            pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+
+
 def _default_output(input_path: str) -> str:
     """INPUT.docx → INPUT.gost.docx (исходник не перезаписываем)."""
     p = Path(input_path)
@@ -48,6 +68,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _setup_console()
     args = _build_parser().parse_args(argv)
     try:
         if args.check:
