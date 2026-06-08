@@ -304,6 +304,8 @@ def unmarked_structure(path: Path) -> None:
     _set_run(doc.add_paragraph().add_run("1.1 История вопроса ................. 5"), "Calibri", 12)
     # Реальный провал (doc06): лидеры разбиты пробелами, номер не впритык.
     _set_run(doc.add_paragraph().add_run("Раздел 2. Проблема интертекста ……….. .…19"), "Calibri", 12)
+    # Реальный провал (doc04): короткий лидер всего из двух точек.
+    _set_run(doc.add_paragraph().add_run("1.2.1. Основные подходы к изучению..20"), "Calibri", 12)
 
     # Структурный элемент как Normal (должен распознаться).
     _set_run(doc.add_paragraph().add_run("ВВЕДЕНИЕ"), "Calibri", 14)
