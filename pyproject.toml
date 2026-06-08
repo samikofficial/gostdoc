@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gostdoc"
+version = "0.1.0"
+description = "Приведение оформления .docx к ГОСТ 7.32-2017 без изменения текста"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "python-docx==1.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+]
+
+[project.scripts]
+gostdoc = "gostdoc.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
