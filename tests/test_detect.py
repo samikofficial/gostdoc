@@ -51,6 +51,15 @@ def test_numbered_multilevel_headings_detected(load_fixture):
     assert _by_text(doc, "3.2.Особенности").style.name == "Heading 2"
 
 
+def test_structural_promoted_over_existing_heading(load_fixture):
+    # «СОДЕРЖАНИЕ» в источнике помечено Heading 3 — должно стать структурным (центр, Heading 1).
+    doc = load_fixture("unmarked_structure.docx")
+    detect_and_mark(doc)
+    p = _exact(doc, "СОДЕРЖАНИЕ")
+    assert p.style.name == "Heading 1"
+    assert p.alignment == WD_ALIGN_PARAGRAPH.CENTER
+
+
 def test_numbered_structural_element_detected(load_fixture):
     # Реальный провал doc02: «5. Список использованных источников» с ведущим номером.
     doc = load_fixture("unmarked_structure.docx")

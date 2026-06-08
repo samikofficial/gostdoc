@@ -354,6 +354,8 @@ def unmarked_structure(path: Path) -> None:
     _set_run(doc.add_paragraph().add_run("СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ"), "Calibri", 14)
     # Реальный провал (doc02): структурный элемент с ведущим номером.
     _set_run(doc.add_paragraph().add_run("5. Список использованных источников"), "Calibri", 14)
+    # Реальный провал (doc02): структурный элемент помечен НЕ тем стилем (Heading 3).
+    doc.add_paragraph("СОДЕРЖАНИЕ", style="Heading 3")
     doc.save(str(path))
 
 

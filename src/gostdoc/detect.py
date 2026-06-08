@@ -117,15 +117,22 @@ def detect_and_mark(document: _Document) -> list[str]:
     log: list[str] = []
     for paragraph in document.paragraphs:
         category = classify_paragraph(paragraph, in_table=False)
-        if category in (CATEGORY_HEADING, CATEGORY_EMPTY, CATEGORY_OTHER):
-            continue  # уже размечено или служебное (в т.ч. TOC-строки)
+        if category in (CATEGORY_EMPTY, CATEGORY_OTHER):
+            continue  # пустые и служебное (в т.ч. TOC-строки) — не трогаем
         text = paragraph.text.strip()
         if not text:
             continue
 
+        # Структурный элемент — высшая уверенность (точное совпадение по ключевому
+        # слову). Приводим к ГОСТ даже поверх существующего heading-стиля: в реальных
+        # ВКР ЗАКЛЮЧЕНИЕ/СПИСОК часто помечены не тем уровнем (Heading 2 и т.п.).
         if _is_struct_word(text) and len(text) <= _MAX_STRUCT_LEN:
             _mark_structural(document, paragraph)
             log.append(f"структурный элемент: {text[:45]!r} → по центру, прописными, с новой страницы")
+            continue
+
+        # Прочие УЖЕ размеченные заголовки оставляем как есть (консервативно).
+        if category == CATEGORY_HEADING:
             continue
 
         if _CHAPTER.match(text) and len(text) <= _MAX_HEADING_LEN:
