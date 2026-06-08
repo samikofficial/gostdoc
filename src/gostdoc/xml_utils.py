@@ -41,9 +41,20 @@ def set_run_fonts(rpr, name: str) -> None:
 
 
 def set_run_size(rpr, length) -> None:
-    """Кегль run'а. length — Length (Pt). w:sz хранит половинки пункта."""
+    """Кегль run'а в w:sz и w:szCs. length — Length (Pt); значение — половинки пункта.
+
+    szCs нужен для run'ов с флагом complex-script, иначе их размером управляет он, а не sz
+    (по аналогии с подв. камнем №6 для гарнитуры). У CT_RPr нет get_or_add для szCs —
+    создаём вручную сразу после sz, сохраняя порядок дочерних элементов по схеме.
+    """
     half_points = str(int(round(length.pt * 2)))
-    rpr.get_or_add_sz().set(qn("w:val"), half_points)
+    sz = rpr.get_or_add_sz()
+    sz.set(qn("w:val"), half_points)
+    szcs = rpr.find(qn("w:szCs"))
+    if szcs is None:
+        szcs = OxmlElement("w:szCs")
+        sz.addnext(szcs)
+    szcs.set(qn("w:val"), half_points)
 
 
 def set_run_color_auto(rpr) -> None:
