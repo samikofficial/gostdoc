@@ -20,6 +20,18 @@ def test_empty_document_does_not_crash(tmp_path):
     assert out.exists()
 
 
+def test_omml_formula_preserved(fixtures_dir, tmp_path):
+    src = fixtures_dir / "with_formula.docx"
+    omath = "{http://schemas.openxmlformats.org/officeDocument/2006/math}oMath"
+    before = len(list(Document(str(src)).element.iter(omath)))
+    assert before >= 1, "в фикстуре нет формулы OMML"
+    out = tmp_path / "formula.gost.docx"
+    format_document(str(src), str(out), detect_structure=True)
+    reopened = Document(str(out))
+    after = len(list(reopened.element.iter(omath)))
+    assert after == before  # формула сохранена, не сломана нормализацией
+
+
 def test_image_only_paragraph_keeps_image(tmp_path):
     doc = Document()
     doc.add_paragraph().add_run().add_picture(io.BytesIO(make_fixtures._PNG_1x1), width=Mm(20))

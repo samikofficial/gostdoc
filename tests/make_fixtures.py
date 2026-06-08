@@ -20,7 +20,7 @@ from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
 
@@ -259,6 +259,23 @@ def with_hyperlink(path: Path) -> None:
     doc.save(str(path))
 
 
+def with_formula(path: Path) -> None:
+    """Документ с формулой OMML (m:oMath) — проверка, что формулы не ломаются.
+
+    Инженерные ВКР полны формул; нормализация run'ов не должна их затрагивать
+    (oMath — это m:r/m:t, а не w:r, поэтому paragraph.runs их не видит).
+    """
+    math_ns = "http://schemas.openxmlformats.org/officeDocument/2006/math"
+    doc = Document()
+    p = doc.add_paragraph()
+    _set_run(p.add_run("Уравнение "), "Calibri", 11)
+    p._p.append(
+        parse_xml(f'<m:oMath xmlns:m="{math_ns}"><m:r><m:t>x = a + b</m:t></m:r></m:oMath>')
+    )
+    _set_run(p.add_run(" в тексте."), "Calibri", 11)
+    doc.save(str(path))
+
+
 def with_revisions(path: Path) -> None:
     """Документ с исправлениями (tracked changes) — для предупреждения (подв. камень №19)."""
     doc = Document()
@@ -402,6 +419,7 @@ BUILDERS = {
     "localized_styles.docx": localized_styles,
     "title_and_body.docx": title_and_body,
     "with_hyperlink.docx": with_hyperlink,
+    "with_formula.docx": with_formula,
     "with_revisions.docx": with_revisions,
     "mirror_margins.docx": mirror_margins,
     "unmarked_structure.docx": unmarked_structure,
