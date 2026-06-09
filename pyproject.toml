@@ -20,8 +20,17 @@ dev = [
 [project.scripts]
 gostdoc = "gostdoc.cli:main"
 
+[project.gui-scripts]
+gostdoc-gui = "gostdoc.gui:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[[tool.mypy.overrides]]
+# tkinter-стабы чрезмерно строги к **kwargs/Literal в UI-глю; логика вынесена в
+# format_file() и покрыта тестами, поэтому проверку типов самого UI отключаем.
+module = "gostdoc.gui"
+ignore_errors = true

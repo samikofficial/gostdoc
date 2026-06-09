@@ -20,6 +20,18 @@ pyinstaller --onefile --collect-data docx --name gostdoc ^
 `--collect-data docx` обязателен: иначе в сборку не попадёт шаблон `default.docx`
 из python-docx и `Document()` упадёт.
 
+### GUI-версия (окно с интерфейсом)
+
+```
+pyinstaller --onefile --windowed --collect-data docx --name gostdoc-gui ^
+    --distpath dist --workpath build/pyi_gui --specpath build ^
+    packaging/gostdoc_gui_entry.py
+```
+
+Результат: `dist/gostdoc-gui.exe` (~15 МБ, включает Tcl/Tk). `--windowed` — без консольного
+окна. Двойной клик открывает окно с выбором файла и настройками; можно также перетащить
+`.docx` на `.exe` — путь подставится в окно.
+
 ## Использование .exe
 
 ```
