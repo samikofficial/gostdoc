@@ -3,6 +3,7 @@
 [![CI](https://github.com/samikofficial/gostdoc/actions/workflows/ci.yml/badge.svg)](https://github.com/samikofficial/gostdoc/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Скачать .exe](https://img.shields.io/badge/⬇_Скачать-gostdoc.exe-2ea44f?logo=windows)](https://github.com/samikofficial/gostdoc/releases/latest/download/gostdoc.exe)
 
 **Автоматическое оформление `.docx` по ГОСТ 7.32-2017 — за секунду, без потери ни одного слова.**
 
@@ -27,8 +28,10 @@ gostdoc Диплом.docx
 
 ### Вариант 1. Без Python — просто `.exe` (для студентов)
 
-Скачайте `gostdoc.exe` (или соберите по [packaging/build.md](packaging/build.md)) и
-**перетащите свой `.docx` на него**. Рядом появится `ВашФайл.gost.docx`.
+**[⬇ Скачать gostdoc.exe](https://github.com/samikofficial/gostdoc/releases/latest/download/gostdoc.exe)**
+и **перетащите свой `.docx` на него** — рядом появится `ВашФайл.gost.docx`.
+
+(Можно также собрать самому — см. [packaging/build.md](packaging/build.md).)
 
 ### Вариант 2. Через Python (для разработчиков)
 
