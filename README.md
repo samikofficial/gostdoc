@@ -116,8 +116,6 @@ pytest                          # тесты
 ruff check src tests            # линт
 ```
 
-Архитектура и принципы — в [CLAUDE.md](CLAUDE.md), полное ТЗ — в [ТЗ.md](ТЗ.md).
-
 ## Лицензия
 
 [MIT](LICENSE).
