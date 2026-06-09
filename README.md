@@ -33,8 +33,8 @@ gostdoc Диплом.docx
 (поля, номер страницы, полужирность заголовков) и жмёшь **«Оформить по ГОСТ»**. Рядом
 появится `ВашФайл.gost.docx`.
 
-Есть и консольный `.exe` без окна — [gostdoc.exe](https://github.com/samikofficial/gostdoc/releases/latest/download/gostdoc.exe):
-перетащи `.docx` прямо на него. (Оба можно собрать самому — см. [packaging/build.md](packaging/build.md).)
+Можно также перетащить `.docx` прямо на `gostdoc-gui.exe` — путь подставится в окно.
+(Собрать самому — см. [packaging/build.md](packaging/build.md).)
 
 ### Вариант 2. Через Python (для разработчиков)
 
