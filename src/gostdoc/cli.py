@@ -43,23 +43,20 @@ def _setup_console() -> None:
             pass
 
 
-def _launched_by_doubleclick() -> bool:
-    """Похоже ли, что .exe запущен двойным кликом/перетаскиванием (своя новая консоль).
+def _is_interactive_exe() -> bool:
+    """Нужна ли пауза в конце, чтобы окно не закрылось мгновенно.
 
-    GetConsoleProcessList возвращает число процессов в консоли: 1 — консоль создана
-    под нас (проводник), >1 — запущено из уже открытого cmd/PowerShell. В терминале и
-    при пайпах (CI/тесты) вернёт False, поэтому паузы там не будет.
+    True — только для собранного .exe (sys.frozen) с подключённой консолью: двойной
+    клик, перетаскивание файла, запуск из cmd. Для pip-установки (обычный CLI) и при
+    пайпах/CI/тестах (stdin не tty) — False, паузы нет.
+
+    Раньше использовался GetConsoleProcessList, но для PyInstaller --onefile он ненадёжен
+    (загрузчик + приложение = 2 процесса в консоли), поэтому пауза не срабатывала.
     """
-    if sys.platform != "win32":
-        return False
-    if not (sys.stdin and sys.stdin.isatty()):
+    if not getattr(sys, "frozen", False):
         return False
     try:
-        import ctypes
-
-        arr = (ctypes.c_uint * 2)()
-        count = ctypes.windll.kernel32.GetConsoleProcessList(arr, 2)
-        return count <= 1
+        return bool(sys.stdin and sys.stdin.isatty())
     except Exception:  # noqa: BLE001
         return False
 
@@ -137,7 +134,7 @@ def _no_arguments(argv: list[str] | None) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     _setup_console()
-    interactive = _launched_by_doubleclick()
+    interactive = _is_interactive_exe()
     try:
         if interactive and _no_arguments(argv):
             print(_USAGE_HINT)
